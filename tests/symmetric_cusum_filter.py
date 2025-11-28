@@ -24,7 +24,7 @@ def main():
     bars = pd.read_parquet(BARS_DIR / "{}_bars.parquet".format(BENTO_FOLDER_NAME))
     bars['timestamp'] = pd.to_datetime(bars['timestamp'])
     bars = bars.set_index('timestamp')
-    tEvents = getTEvents(bars['close'], h=0.2)
+    tEvents = getTEvents(bars['close'], h=1)
     print(f"✔ Extracted {len(tEvents)} time events from bars")
     print(len(bars))
     plot_df_column(bars, column='close')

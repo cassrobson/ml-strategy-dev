@@ -58,7 +58,7 @@ def plot_candlesticks(
     step = max(1, len(bars) // 10)
     ax.set_xticks(range(0, len(bars), step))
     ax.set_xticklabels(
-        bars["timestamp"].iloc[::step].dt.strftime("%H:%M:%S"),
+        bars["timestamp"].iloc[::step].dt.strftime("%m-%d %H:%M:%S"),
         rotation=45,
     )
 

@@ -5,9 +5,9 @@ def getTEvents(gRaw, h):
     diff = gRaw.diff()
     for i in diff.index[1:]:
         sPos, sNeg=max(0, sPos+diff.loc[i]), min(0, sNeg+diff.loc[i])
-        if sNeg <=h:
-            sNeg=0;tEvents.append(i)
-        elif sPos >=h:
-            sPos
+        if sNeg <= -h:  # Should be -h, not h
+            sNeg=0; tEvents.append(i)
+        elif sPos >= h:
+            sPos=0; tEvents.append(i)  
     return pd.DatetimeIndex(tEvents)
 

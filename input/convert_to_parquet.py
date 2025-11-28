@@ -9,7 +9,7 @@ import os
 
 load_dotenv()
 
-BENTO_FOLDER_NAME = os.geteng("BENTO_FOLDER_NAME")
+BENTO_FOLDER_NAME = os.getenv("BENTO_FOLDER_NAME")
 
 # Build directories relative to this script
 ROOT = pathlib.Path(__file__).parent
