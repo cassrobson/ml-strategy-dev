@@ -4,27 +4,7 @@ import pandas as pd
 import sys
 import traceback
 from datetime import timedelta
-from dotenv import load_dotenv
-import os
-from data_curation_plotting_functions import plot_candlesticks
 from tqdm import tqdm
-
-load_dotenv()
-
-BENTO_FOLDER_NAME = os.getenv("BENTO_FOLDER_NAME")
-DUCKDB_PATH = (
-    pathlib.Path(__file__).parents[1]
-    / "input"
-    / "databases"
-    / f"{BENTO_FOLDER_NAME}.duckdb"
-)
-
-OUTPUT_DIR = (
-    pathlib.Path(__file__).parents[1]
-    / "data_curation"
-    / "bars"
-    / BENTO_FOLDER_NAME
-)
 
 def ensure_dir(path: pathlib.Path):
     try:
@@ -34,14 +14,14 @@ def ensure_dir(path: pathlib.Path):
         print(e)
         sys.exit(1)
 
-def load_mbo_table():
+def load_mbo_table(duckdb_path: pathlib.Path) -> pd.DataFrame:
     """Load the MBO table from DuckDB as a pandas DataFrame."""
-    if not DUCKDB_PATH.exists():
-        print(f"❌ DuckDB not found: {DUCKDB_PATH}")
+    if not duckdb_path.exists():
+        print(f"❌ DuckDB not found: {duckdb_path}")
         sys.exit(1)
 
     try:
-        con = duckdb.connect(str(DUCKDB_PATH))
+        con = duckdb.connect(str(duckdb_path))
         df = con.execute("SELECT * FROM mbo WHERE ts_event >='2025-11-11' ORDER BY ts_event").fetchdf()
         print(f"✔ Loaded {len(df):,} rows from mbo")
         return df
@@ -182,20 +162,4 @@ def compute_volume_imbalance_bars(df: pd.DataFrame, imbalance_threshold: int) ->
 
     return pd.DataFrame(bars)
 
-if __name__ == "__main__":
-    ensure_dir(OUTPUT_DIR)
 
-    df = load_mbo_table()
-
-    VOLUME_THRESHOLD = 10000
-
-    bar_type = "imbalance_volume"  # "volume" or "imbalance_volume"
-
-    if bar_type == "imbalance_volume":
-        volume_bars = compute_volume_imbalance_bars(df, VOLUME_THRESHOLD)
-        volume_bars.to_parquet(OUTPUT_DIR / "{}_imbalance_bars.parquet".format(BENTO_FOLDER_NAME))
-    else:
-        volume_bars = compute_volume_bars(df, VOLUME_THRESHOLD)
-        volume_bars.to_parquet(OUTPUT_DIR / "{}_bars.parquet".format(BENTO_FOLDER_NAME))
-
-    plot_candlesticks(volume_bars, title="Volume Bars", filename="{}_volume_bars.png".format(BENTO_FOLDER_NAME))
