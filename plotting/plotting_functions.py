@@ -155,3 +155,201 @@ def plot_df_column(df, column, title=None, ylabel=None, figsize=(10, 4)):
     print(f"Saved candlestick plot → {out_file}")
 
 
+def plot_candlesticks_with_bollinger_bands(
+    bars: pd.DataFrame,
+    num_std: float = 2.0,
+    title="Candlestick Chart with Bollinger Bands",
+    filename="candlestick_bollinger_plot.png",
+):
+    """
+    Plots candlesticks with Bollinger Bands overlay and saves to data_curation_plots/.
+    Expects bars to have bollinger band columns: sma, upper_band, lower_band
+    
+    Args:
+        bars: DataFrame with OHLC and bollinger band data
+        num_std: Number of standard deviations for labeling
+        title: Plot title
+        filename: Output filename
+    """
+    
+    required_cols = {"timestamp", "open", "high", "low", "close", "sma", "upper_band", "lower_band"}
+    if not required_cols.issubset(bars.columns):
+        raise ValueError(f"Bars DataFrame must include: {required_cols}")
+
+    bars = bars.sort_values("timestamp").reset_index(drop=True)
+
+    plots_dir = pathlib.Path(__file__).parent / "data_curation_plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    out_file = plots_dir / filename
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+    candle_width = 0.6
+
+    # Plot candlesticks
+    for i, row in bars.iterrows():
+        o = row["open"]
+        h = row["high"]
+        l = row["low"]
+        c = row["close"]
+
+        # --- Wick (behind candle) ---
+        ax.plot([i, i], [l, h], color="black", linewidth=0.7, zorder=1)
+
+        # --- Candle body ---
+        body_low = min(o, c)
+        body_height = abs(c - o)
+        fill_color = "white" if c >= o else "black"
+
+        rect = patches.Rectangle(
+            (i - candle_width / 2, body_low),
+            candle_width,
+            max(body_height, 0.01),
+            facecolor=fill_color,
+            edgecolor="black",
+            linewidth=0.7,
+            zorder=2,
+        )
+        ax.add_patch(rect)
+
+    # Plot Bollinger Bands with dynamic labels
+    x_vals = range(len(bars))
+    ax.plot(x_vals, bars["sma"], color="blue", linewidth=1.5, label="SMA", zorder=3)
+    ax.plot(x_vals, bars["upper_band"], color="red", linewidth=1, linestyle="--", 
+            label=f"Upper Band (+{num_std}σ)", zorder=3)
+    ax.plot(x_vals, bars["lower_band"], color="red", linewidth=1, linestyle="--", 
+            label=f"Lower Band (-{num_std}σ)", zorder=3)
+    
+    # Fill between bands for visual clarity
+    ax.fill_between(x_vals, bars["upper_band"], bars["lower_band"], 
+                    color="red", alpha=0.1, zorder=0)
+
+    ax.set_title(title)
+    ax.set_xlabel("Bars")
+    ax.set_ylabel("Price")
+    ax.legend()
+
+    step = max(1, len(bars) // 10)
+    ax.set_xticks(range(0, len(bars), step))
+    ax.set_xticklabels(
+        bars["timestamp"].iloc[::step].dt.strftime("%m-%d %H:%M:%S"),
+        rotation=45,
+    )
+
+    plt.tight_layout()
+    fig.savefig(out_file, dpi=300)
+    plt.close(fig)
+
+    print(f"Saved candlestick with Bollinger Bands plot → {out_file}")
+
+
+def plot_candlesticks_with_bollinger_bands_and_cusum(
+    bars: pd.DataFrame,
+    cusum_events: pd.DatetimeIndex,
+    num_std: float = 2.0,
+    title="Candlestick Chart with Bollinger Bands and CUSUM Events",
+    filename="candlestick_bollinger_cusum_plot.png",
+):
+    """
+    Plots candlesticks with Bollinger Bands overlay and CUSUM event markers.
+    
+    Args:
+        bars: DataFrame with OHLC and bollinger band data
+        cusum_events: DatetimeIndex of CUSUM event timestamps
+        num_std: Number of standard deviations for labeling
+        title: Plot title
+        filename: Output filename
+    """
+    
+    required_cols = {"timestamp", "open", "high", "low", "close", "sma", "upper_band", "lower_band"}
+    if not required_cols.issubset(bars.columns):
+        raise ValueError(f"Bars DataFrame must include: {required_cols}")
+
+    bars = bars.sort_values("timestamp").reset_index(drop=True)
+
+    plots_dir = pathlib.Path(__file__).parent / "feature_construction_plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    out_file = plots_dir / filename
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+    candle_width = 0.6
+
+    # Plot candlesticks
+    for i, row in bars.iterrows():
+        o = row["open"]
+        h = row["high"]
+        l = row["low"]
+        c = row["close"]
+
+        # --- Wick (behind candle) ---
+        ax.plot([i, i], [l, h], color="black", linewidth=0.7, zorder=1)
+
+        # --- Candle body ---
+        body_low = min(o, c)
+        body_height = abs(c - o)
+        fill_color = "white" if c >= o else "black"
+
+        rect = patches.Rectangle(
+            (i - candle_width / 2, body_low),
+            candle_width,
+            max(body_height, 0.01),
+            facecolor=fill_color,
+            edgecolor="black",
+            linewidth=0.7,
+            zorder=2,
+        )
+        ax.add_patch(rect)
+
+    # Plot Bollinger Bands
+    x_vals = range(len(bars))
+    ax.plot(x_vals, bars["sma"], color="blue", linewidth=1.5, label="SMA", zorder=3)
+    ax.plot(x_vals, bars["upper_band"], color="red", linewidth=1, linestyle="--", 
+            label=f"Upper Band (+{num_std}σ)", zorder=3)
+    ax.plot(x_vals, bars["lower_band"], color="red", linewidth=1, linestyle="--", 
+            label=f"Lower Band (-{num_std}σ)", zorder=3)
+    
+    # Fill between bands for visual clarity
+    ax.fill_between(x_vals, bars["upper_band"], bars["lower_band"], 
+                    color="red", alpha=0.1, zorder=0)
+
+    # Plot CUSUM events
+    if len(cusum_events) > 0:
+        # Convert timestamps to bar indices for plotting
+        bars['timestamp'] = pd.to_datetime(bars['timestamp'])
+        cusum_indices = []
+        cusum_prices = []
+        
+        for event_time in cusum_events:
+            # Find the closest bar index for this timestamp
+            matching_bars = bars[bars['timestamp'] == event_time]
+            if len(matching_bars) > 0:
+                idx = matching_bars.index[0]
+                cusum_indices.append(idx)
+                cusum_prices.append(matching_bars['close'].iloc[0])
+        
+        if cusum_indices:
+            ax.scatter(cusum_indices, cusum_prices, 
+                      color="green", s=100, marker="^", 
+                      label=f"CUSUM Events ({len(cusum_indices)})", 
+                      zorder=4, edgecolors="black", linewidth=1)
+
+    ax.set_title(title)
+    ax.set_xlabel("Bars")
+    ax.set_ylabel("Price")
+    ax.legend()
+
+    step = max(1, len(bars) // 10)
+    ax.set_xticks(range(0, len(bars), step))
+    ax.set_xticklabels(
+        bars["timestamp"].iloc[::step].dt.strftime("%m-%d %H:%M:%S"),
+        rotation=45,
+    )
+
+    plt.tight_layout()
+    fig.savefig(out_file, dpi=300)
+    plt.close(fig)
+
+    print(f"Saved candlestick with Bollinger Bands and CUSUM events plot → {out_file}")
+
+
+
+
